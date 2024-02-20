@@ -1,6 +1,7 @@
 package disroute_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/bwmarrin/discordgo"
@@ -10,9 +11,15 @@ import (
 var (
 	EmptyHandler = func(
 		*discordgo.Interaction,
-		map[string]*discordgo.ApplicationCommandInteractionDataOption,
+		map[string]*disroute.DiscordCmdOption,
 	) error {
 		return nil
+	}
+	ErrorHandler = func(
+		*discordgo.Interaction,
+		map[string]*disroute.DiscordCmdOption,
+	) error {
+		return errors.New("error")
 	}
 )
 
@@ -185,5 +192,195 @@ func Test_RegisterAll_MixedSubcommands(t *testing.T) {
 
 	if len(r.GetAll()) != 3 {
 		t.Errorf("Expected 3 commands, got %d", len(r.GetAll()))
+	}
+}
+
+func Test_FindAndExecute_Errors(t *testing.T) {
+	r := disroute.New()
+
+	cmds := []*disroute.Cmd{
+		{
+			Path:    "cmd",
+			Handler: ErrorHandler,
+		},
+		{
+			Path: "cmd3",
+			Options: []*disroute.CmdOption{
+				{
+					Path:    "sub",
+					Type:    disroute.TypeSubcommand,
+					Handler: EmptyHandler,
+				},
+			},
+		},
+	}
+
+	err := r.RegisterAll(cmds)
+	if err != nil {
+		t.Errorf("Expected nil error, got %v", err)
+	}
+
+	err = r.FindAndExecute(&discordgo.InteractionCreate{
+		Interaction: &discordgo.Interaction{
+			Type: discordgo.InteractionMessageComponent,
+		},
+	})
+	if err == nil {
+		t.Error("Expected error, got nil")
+	}
+
+	err = r.FindAndExecute(&discordgo.InteractionCreate{
+		Interaction: &discordgo.Interaction{
+			Type: discordgo.InteractionApplicationCommand,
+			Data: discordgo.ApplicationCommandInteractionData{
+				Name: "cmd",
+			},
+		},
+	})
+	if err == nil {
+		t.Error("Expected error, got nil")
+	}
+
+	err = r.FindAndExecute(&discordgo.InteractionCreate{
+		Interaction: &discordgo.Interaction{
+			Type: discordgo.InteractionApplicationCommand,
+			Data: discordgo.ApplicationCommandInteractionData{
+				Name: "cmd2",
+			},
+		},
+	})
+	if err == nil {
+		t.Error("Expected error, got nil")
+	}
+
+	err = r.FindAndExecute(&discordgo.InteractionCreate{
+		Interaction: &discordgo.Interaction{
+			Type: discordgo.InteractionApplicationCommand,
+			Data: discordgo.ApplicationCommandInteractionData{
+				Name: "cmd3",
+			},
+		},
+	})
+	if err == nil {
+		t.Error("Expected error, got nil")
+	}
+}
+
+func Test_FindAndExecute_SingleCmd(t *testing.T) {
+	r := disroute.New()
+
+	cmds := []*disroute.Cmd{
+		{
+			Path:    "cmd",
+			Handler: EmptyHandler,
+		},
+	}
+
+	err := r.RegisterAll(cmds)
+	if err != nil {
+		t.Errorf("Expected nil error, got %v", err)
+	}
+
+	err = r.FindAndExecute(&discordgo.InteractionCreate{
+		Interaction: &discordgo.Interaction{
+			Type: discordgo.InteractionApplicationCommand,
+			Data: discordgo.ApplicationCommandInteractionData{
+				Name: "cmd",
+			},
+		},
+	})
+	if err != nil {
+		t.Error("Expected nil error, got", err)
+	}
+}
+
+func Test_FindAndExecute_Subcommand(t *testing.T) {
+	r := disroute.New()
+
+	cmds := []*disroute.Cmd{
+		{
+			Path: "cmd3",
+			Options: []*disroute.CmdOption{
+				{
+					Path:    "sub",
+					Type:    disroute.TypeSubcommand,
+					Handler: EmptyHandler,
+				},
+			},
+		},
+	}
+
+	err := r.RegisterAll(cmds)
+	if err != nil {
+		t.Errorf("Expected nil error, got %v", err)
+	}
+
+	err = r.FindAndExecute(&discordgo.InteractionCreate{
+		Interaction: &discordgo.Interaction{
+			Type: discordgo.InteractionApplicationCommand,
+			Data: discordgo.ApplicationCommandInteractionData{
+				Name: "cmd3",
+				Options: []*discordgo.ApplicationCommandInteractionDataOption{
+					{
+						Name: "sub",
+						Type: discordgo.ApplicationCommandOptionSubCommand,
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Error("Expected nil error, got", err)
+	}
+}
+func Test_FindAndExecute_SubcommandGroup(t *testing.T) {
+	r := disroute.New()
+
+	cmds := []*disroute.Cmd{
+		{
+			Path: "cmd4",
+			Options: []*disroute.CmdOption{
+				{
+					Path: "gr",
+					Type: disroute.TypeSubcommandGroup,
+					Options: []*disroute.CmdOption{
+						{
+							Path:    "sub2",
+							Type:    disroute.TypeSubcommand,
+							Handler: EmptyHandler,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := r.RegisterAll(cmds)
+	if err != nil {
+		t.Errorf("Expected nil error, got %v", err)
+	}
+
+	err = r.FindAndExecute(&discordgo.InteractionCreate{
+		Interaction: &discordgo.Interaction{
+			Type: discordgo.InteractionApplicationCommand,
+			Data: discordgo.ApplicationCommandInteractionData{
+				Name: "cmd4",
+				Options: []*discordgo.ApplicationCommandInteractionDataOption{
+					{
+						Name: "gr",
+						Type: discordgo.ApplicationCommandOptionSubCommandGroup,
+						Options: []*discordgo.ApplicationCommandInteractionDataOption{
+							{
+								Name: "sub2",
+								Type: discordgo.ApplicationCommandOptionSubCommand,
+							},
+						},
+					},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Error("Expected nil error, got", err)
 	}
 }
