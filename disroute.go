@@ -12,6 +12,8 @@ const (
 	TypeSubcommandGroup = discordgo.ApplicationCommandOptionSubCommandGroup
 )
 
+type DiscordCmdOption = discordgo.ApplicationCommandInteractionDataOption
+
 type HandlerFunc func(
 	*discordgo.Interaction,
 	map[string]*DiscordCmdOption,
@@ -117,5 +119,50 @@ func (r *Router) GetAll() map[string]HandlerFunc {
 }
 
 func (r *Router) FindAndExecute(i *discordgo.InteractionCreate) error {
-	panic("not implemented")
+	if i.Type != discordgo.InteractionApplicationCommand {
+		return errors.New("invalid interaction type")
+	}
+
+	data := i.ApplicationCommandData()
+
+	pathParts := []string{data.Name}
+	options := r.buildOptionsMap(data.Options)
+
+	for _, opt := range data.Options {
+		if opt.Type == TypeSubcommand {
+			pathParts = append(pathParts, opt.Name)
+			options = r.buildOptionsMap(opt.Options)
+			break
+		}
+
+		if opt.Type == TypeSubcommandGroup {
+			pathParts = append(pathParts, opt.Name)
+			for _, subOpt := range opt.Options {
+				if subOpt.Type == TypeSubcommand {
+					pathParts = append(pathParts, subOpt.Name)
+					options = r.buildOptionsMap(subOpt.Options)
+					break
+				}
+			}
+		}
+	}
+
+	path := strings.Join(pathParts, ":")
+
+	var h HandlerFunc
+	var ok bool
+	if h, ok = r.cmds[path]; !ok {
+		return errors.New("command not registered")
+	}
+
+	return h(i.Interaction, options)
+}
+
+func (r *Router) buildOptionsMap(options []*DiscordCmdOption) map[string]*DiscordCmdOption {
+	commandOptions := make(map[string]*DiscordCmdOption)
+	for _, option := range options {
+		commandOptions[option.Name] = option
+	}
+
+	return commandOptions
 }
