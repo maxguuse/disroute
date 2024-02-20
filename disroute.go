@@ -17,7 +17,7 @@ type DiscordCmdOption = discordgo.ApplicationCommandInteractionDataOption
 type HandlerFunc func(
 	*discordgo.Interaction,
 	map[string]*DiscordCmdOption,
-) error
+) (string, error)
 
 type Cmd struct {
 	Path    string
@@ -118,9 +118,9 @@ func (r *Router) GetAll() map[string]HandlerFunc {
 
 }
 
-func (r *Router) FindAndExecute(i *discordgo.InteractionCreate) error {
+func (r *Router) FindAndExecute(i *discordgo.InteractionCreate) (string, error) {
 	if i.Type != discordgo.InteractionApplicationCommand {
-		return errors.New("invalid interaction type")
+		return "", errors.New("invalid interaction type")
 	}
 
 	data := i.ApplicationCommandData()
@@ -152,7 +152,7 @@ func (r *Router) FindAndExecute(i *discordgo.InteractionCreate) error {
 	var h HandlerFunc
 	var ok bool
 	if h, ok = r.cmds[path]; !ok {
-		return errors.New("command not registered")
+		return "", errors.New("command not registered")
 	}
 
 	return h(i.Interaction, options)

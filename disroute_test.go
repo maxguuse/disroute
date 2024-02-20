@@ -12,14 +12,14 @@ var (
 	EmptyHandler = func(
 		*discordgo.Interaction,
 		map[string]*disroute.DiscordCmdOption,
-	) error {
-		return nil
+	) (string, error) {
+		return "", nil
 	}
 	ErrorHandler = func(
 		*discordgo.Interaction,
 		map[string]*disroute.DiscordCmdOption,
-	) error {
-		return errors.New("error")
+	) (string, error) {
+		return "", errors.New("error")
 	}
 )
 
@@ -220,7 +220,7 @@ func Test_FindAndExecute_Errors(t *testing.T) {
 		t.Errorf("Expected nil error, got %v", err)
 	}
 
-	err = r.FindAndExecute(&discordgo.InteractionCreate{
+	_, err = r.FindAndExecute(&discordgo.InteractionCreate{
 		Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionMessageComponent,
 		},
@@ -229,7 +229,7 @@ func Test_FindAndExecute_Errors(t *testing.T) {
 		t.Error("Expected error, got nil")
 	}
 
-	err = r.FindAndExecute(&discordgo.InteractionCreate{
+	_, err = r.FindAndExecute(&discordgo.InteractionCreate{
 		Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionApplicationCommand,
 			Data: discordgo.ApplicationCommandInteractionData{
@@ -241,7 +241,7 @@ func Test_FindAndExecute_Errors(t *testing.T) {
 		t.Error("Expected error, got nil")
 	}
 
-	err = r.FindAndExecute(&discordgo.InteractionCreate{
+	_, err = r.FindAndExecute(&discordgo.InteractionCreate{
 		Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionApplicationCommand,
 			Data: discordgo.ApplicationCommandInteractionData{
@@ -253,7 +253,7 @@ func Test_FindAndExecute_Errors(t *testing.T) {
 		t.Error("Expected error, got nil")
 	}
 
-	err = r.FindAndExecute(&discordgo.InteractionCreate{
+	_, err = r.FindAndExecute(&discordgo.InteractionCreate{
 		Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionApplicationCommand,
 			Data: discordgo.ApplicationCommandInteractionData{
@@ -281,7 +281,7 @@ func Test_FindAndExecute_SingleCmd(t *testing.T) {
 		t.Errorf("Expected nil error, got %v", err)
 	}
 
-	err = r.FindAndExecute(&discordgo.InteractionCreate{
+	_, err = r.FindAndExecute(&discordgo.InteractionCreate{
 		Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionApplicationCommand,
 			Data: discordgo.ApplicationCommandInteractionData{
@@ -315,7 +315,7 @@ func Test_FindAndExecute_Subcommand(t *testing.T) {
 		t.Errorf("Expected nil error, got %v", err)
 	}
 
-	err = r.FindAndExecute(&discordgo.InteractionCreate{
+	_, err = r.FindAndExecute(&discordgo.InteractionCreate{
 		Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionApplicationCommand,
 			Data: discordgo.ApplicationCommandInteractionData{
@@ -360,7 +360,7 @@ func Test_FindAndExecute_SubcommandGroup(t *testing.T) {
 		t.Errorf("Expected nil error, got %v", err)
 	}
 
-	err = r.FindAndExecute(&discordgo.InteractionCreate{
+	_, err = r.FindAndExecute(&discordgo.InteractionCreate{
 		Interaction: &discordgo.Interaction{
 			Type: discordgo.InteractionApplicationCommand,
 			Data: discordgo.ApplicationCommandInteractionData{
