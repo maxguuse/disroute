@@ -7,6 +7,15 @@ import (
 	"github.com/maxguuse/disroute"
 )
 
+var (
+	EmptyHandler = func(
+		*discordgo.Interaction,
+		map[string]*discordgo.ApplicationCommandInteractionDataOption,
+	) error {
+		return nil
+	}
+)
+
 func Test_RegisterAll_Errors(t *testing.T) {
 	r := disroute.New()
 
@@ -58,12 +67,8 @@ func Test_RegisterAll_SingleCmd(t *testing.T) {
 
 	cmds := []*disroute.Cmd{
 		{
-			Path: "cmd",
-			Handler: func(
-				*discordgo.Interaction,
-				map[string]*discordgo.ApplicationCommandInteractionDataOption,
-			) {
-			},
+			Path:    "cmd",
+			Handler: EmptyHandler,
 		},
 	}
 
@@ -85,22 +90,14 @@ func Test_RegisterAll_Subcommands(t *testing.T) {
 			Path: "sub",
 			Options: []*disroute.CmdOption{
 				{
-					Path: "cmd",
-					Type: disroute.TypeSubcommand,
-					Handler: func(
-						*discordgo.Interaction,
-						map[string]*discordgo.ApplicationCommandInteractionDataOption,
-					) {
-					},
+					Path:    "cmd",
+					Type:    disroute.TypeSubcommand,
+					Handler: EmptyHandler,
 				},
 				{
-					Path: "cmd2",
-					Type: disroute.TypeSubcommand,
-					Handler: func(
-						*discordgo.Interaction,
-						map[string]*discordgo.ApplicationCommandInteractionDataOption,
-					) {
-					},
+					Path:    "cmd2",
+					Type:    disroute.TypeSubcommand,
+					Handler: EmptyHandler,
 				},
 			},
 		},
@@ -128,22 +125,14 @@ func Test_RegisterAll_SubcommandGroups(t *testing.T) {
 					Type: disroute.TypeSubcommandGroup,
 					Options: []*disroute.CmdOption{
 						{
-							Path: "cmd",
-							Type: disroute.TypeSubcommand,
-							Handler: func(
-								*discordgo.Interaction,
-								map[string]*discordgo.ApplicationCommandInteractionDataOption,
-							) {
-							},
+							Path:    "cmd",
+							Type:    disroute.TypeSubcommand,
+							Handler: EmptyHandler,
 						},
 						{
-							Path: "cmd2",
-							Type: disroute.TypeSubcommand,
-							Handler: func(
-								*discordgo.Interaction,
-								map[string]*discordgo.ApplicationCommandInteractionDataOption,
-							) {
-							},
+							Path:    "cmd2",
+							Type:    disroute.TypeSubcommand,
+							Handler: EmptyHandler,
 						},
 					},
 				},
@@ -169,33 +158,21 @@ func Test_RegisterAll_MixedSubcommands(t *testing.T) {
 					Type: disroute.TypeSubcommandGroup,
 					Options: []*disroute.CmdOption{
 						{
-							Path: "cmd",
-							Type: disroute.TypeSubcommand,
-							Handler: func(
-								*discordgo.Interaction,
-								map[string]*discordgo.ApplicationCommandInteractionDataOption,
-							) {
-							},
+							Path:    "cmd",
+							Type:    disroute.TypeSubcommand,
+							Handler: EmptyHandler,
 						},
 						{
-							Path: "cmd2",
-							Type: disroute.TypeSubcommand,
-							Handler: func(
-								*discordgo.Interaction,
-								map[string]*discordgo.ApplicationCommandInteractionDataOption,
-							) {
-							},
+							Path:    "cmd2",
+							Type:    disroute.TypeSubcommand,
+							Handler: EmptyHandler,
 						},
 					},
 				},
 				{
-					Path: "cmd",
-					Type: disroute.TypeSubcommand,
-					Handler: func(
-						*discordgo.Interaction,
-						map[string]*discordgo.ApplicationCommandInteractionDataOption,
-					) {
-					},
+					Path:    "cmd",
+					Type:    disroute.TypeSubcommand,
+					Handler: EmptyHandler,
 				},
 			},
 		},

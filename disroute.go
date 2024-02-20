@@ -14,8 +14,8 @@ const (
 
 type HandlerFunc func(
 	*discordgo.Interaction,
-	map[string]*discordgo.ApplicationCommandInteractionDataOption,
-)
+	map[string]*DiscordCmdOption,
+) error
 
 type Cmd struct {
 	Path    string
