@@ -61,7 +61,7 @@ func (r *Router) RegisterAll(cmds []*Cmd) error {
 
 		for _, opt := range cmd.Options {
 			if opt.Type != TypeSubcommand && opt.Type != TypeSubcommandGroup {
-				return errors.New("cmd has non-subcommand option")
+				continue
 			}
 
 			pathParts = append(pathParts, opt.Path)
@@ -77,8 +77,6 @@ func (r *Router) RegisterAll(cmds []*Cmd) error {
 				r.cmds[p] = h
 
 				pathParts = pathParts[:len(pathParts)-1]
-
-				continue
 			}
 
 			if opt.Type == TypeSubcommandGroup {
@@ -88,7 +86,7 @@ func (r *Router) RegisterAll(cmds []*Cmd) error {
 
 				for _, sub := range opt.Options {
 					if sub.Type != TypeSubcommand {
-						return errors.New("subcommand group has non-subcommand option")
+						continue
 					}
 
 					if sub.Handler == nil {
@@ -115,7 +113,6 @@ func (r *Router) RegisterAll(cmds []*Cmd) error {
 
 func (r *Router) GetAll() map[string]HandlerFunc {
 	return r.cmds
-
 }
 
 func (r *Router) FindAndExecute(i *discordgo.InteractionCreate) (string, error) {
