@@ -3,6 +3,7 @@ package disroute
 import (
 	"errors"
 	"strings"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -33,7 +34,8 @@ type CmdOption struct {
 }
 
 type Router struct {
-	cmds map[string]HandlerFunc
+	cmdMx sync.RWMutex
+	cmds  map[string]HandlerFunc
 }
 
 func New() *Router {
@@ -46,6 +48,9 @@ func (r *Router) RegisterAll(cmds []*Cmd) error {
 	if len(cmds) == 0 {
 		return nil
 	}
+
+	r.cmdMx.Lock()
+	defer r.cmdMx.Unlock()
 
 	for _, cmd := range cmds {
 		pathParts := []string{cmd.Path}
@@ -112,6 +117,9 @@ func (r *Router) RegisterAll(cmds []*Cmd) error {
 }
 
 func (r *Router) GetAll() map[string]HandlerFunc {
+	r.cmdMx.RLock()
+	defer r.cmdMx.RUnlock()
+
 	return r.cmds
 }
 
@@ -119,6 +127,9 @@ func (r *Router) FindAndExecute(i *discordgo.InteractionCreate) (string, error) 
 	if i.Type != discordgo.InteractionApplicationCommand {
 		return "", errors.New("invalid interaction type")
 	}
+
+	r.cmdMx.RLock()
+	defer r.cmdMx.RUnlock()
 
 	data := i.ApplicationCommandData()
 
