@@ -14,6 +14,8 @@ const (
 
 	TypeSubcommand      = discordgo.ApplicationCommandOptionSubCommand
 	TypeSubcommandGroup = discordgo.ApplicationCommandOptionSubCommandGroup
+
+	TypeMessageComponent = discordgo.InteractionMessageComponent
 )
 
 type DiscordCmdOption = discordgo.ApplicationCommandInteractionDataOption
@@ -21,6 +23,10 @@ type DiscordCmdOption = discordgo.ApplicationCommandInteractionDataOption
 type HandlerFunc func(
 	*discordgo.Interaction,
 	map[string]*DiscordCmdOption,
+) (string, error)
+
+type ComponentHandlerFunc func(
+	*discordgo.Interaction,
 ) (string, error)
 
 type Cmd struct {
@@ -41,18 +47,47 @@ type Handlers struct {
 	Autocomplete HandlerFunc
 }
 
+type Component struct {
+	Key     string
+	Handler ComponentHandlerFunc
+}
+
 type Router struct {
 	cmdMx sync.RWMutex
 	cmds  map[string]HandlerFunc
 
 	autocompleteMx sync.RWMutex
 	autocompletes  map[string]HandlerFunc
+
+	componentsMx  sync.RWMutex
+	components    map[string]ComponentHandlerFunc
+	componentFunc func(*discordgo.InteractionCreate) (key string)
 }
 
-func New() *Router {
-	return &Router{
+func New(options ...func(*Router)) *Router {
+	r := &Router{
 		cmds:          make(map[string]HandlerFunc),
 		autocompletes: make(map[string]HandlerFunc),
+		components:    make(map[string]ComponentHandlerFunc),
+		componentFunc: func(ic *discordgo.InteractionCreate) (key string) {
+			if ic.Type != discordgo.InteractionMessageComponent {
+				return ""
+			}
+
+			return ic.MessageComponentData().CustomID
+		},
+	}
+
+	for _, o := range options {
+		o(r)
+	}
+
+	return r
+}
+
+func WithComponentFunc(f func(*discordgo.InteractionCreate) (key string)) func(*Router) {
+	return func(r *Router) {
+		r.componentFunc = f
 	}
 }
 
@@ -159,6 +194,34 @@ func (r *Router) FindAndAutocomplete(i *discordgo.InteractionCreate) (string, er
 	}
 
 	return "", errors.New("autocompletion not registered")
+}
+
+func (r *Router) RegisterComponents(cmps []*Component) error {
+	r.componentsMx.Lock()
+	defer r.componentsMx.Unlock()
+
+	for _, cmp := range cmps {
+		r.components[cmp.Key] = cmp.Handler
+	}
+
+	return nil
+}
+
+func (r *Router) FindComponentAndExecute(i *discordgo.InteractionCreate) (string, error) {
+	if i.Type != TypeMessageComponent {
+		return "", errors.New("invalid interaction type")
+	}
+
+	r.componentsMx.RLock()
+	defer r.componentsMx.RUnlock()
+
+	key := r.componentFunc(i)
+
+	if h, ok := r.components[key]; ok {
+		return h(i.Interaction)
+	}
+
+	return "", errors.New("component not registered")
 }
 
 type handlerData struct {
