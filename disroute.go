@@ -201,6 +201,9 @@ func (r *Router) RegisterComponents(cmps []*Component) error {
 	defer r.componentsMx.Unlock()
 
 	for _, cmp := range cmps {
+		if strings.TrimSpace(cmp.Key) == "" || cmp.Handler == nil {
+			return errors.New("invalid component, missing key or handler")
+		}
 		r.components[cmp.Key] = cmp.Handler
 	}
 
